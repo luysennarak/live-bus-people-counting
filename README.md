@@ -3,8 +3,10 @@
 This is python code to detect and count people on tbe bus.
 
 Dependencies:
-    pip install python-opencv
-    pip install imutils
+
+pip install python-opencv
+
+pip install imutils
     
 Usage:
 
