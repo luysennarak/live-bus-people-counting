@@ -7,9 +7,11 @@ Dependencies:
     pip install imutils
     
 Usage:
-    - To use local video file,
+
+- To use local video file,
         people_counter.py --live no --video test.avi --out result.avi
-    - To use webcam,
+
+- To use webcam,
         people_counter.py --live yes --out result.avi
         
         
