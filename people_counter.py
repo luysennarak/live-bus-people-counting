@@ -14,19 +14,21 @@ SZ_LIMIT2 = 250
 line_point1 = (50, 300)
 line_point2 = (640 - 50, 300)
 top_cascade = cv2.CascadeClassifier('HAAR_3.xml')
-_DEBUG_ = True
+_DEBUG_ = False
 _OUTPUT_ = False
 
 
 class Person:
     positions = []
+    isCounted = False
+    disappear_count = 0
 
     def __init__(self, position):
         self.positions = [position]
 
     def update_position(self, new_position):
         self.positions.append(new_position)
-        if len(self.positions) > 10:
+        if len(self.positions) > 100:
             self.positions.pop(0)
 
     def on_opposite_sides(self, y_coord):
@@ -36,14 +38,31 @@ class Person:
 
     def did_cross_line(self, y_coord):
         if self.on_opposite_sides(y_coord):
+            # if abs(self.positions[-1][1] - line_point1[1]) > 50:
+            #     return NO_CHANGE_STRING
             if self.positions[-1][1] < line_point1[1]:
-                return ENTERED_STRING
+                if not self.isCounted:
+                    # self.isCounted = True
+                    return ENTERED_STRING
+                else:
+                    self.disappear_count += 1
+                    return NO_CHANGE_STRING
             else:
-                return LEFT_AREA_STRING
+                if not self.isCounted:
+                    # self.isCounted = True
+                    return LEFT_AREA_STRING
+                else:
+                    self.disappear_count += 1
+                    return NO_CHANGE_STRING
         else:
+            self.disappear_count += 1
             return NO_CHANGE_STRING
 
     def distance_from_last_x_positions(self, new_position, x):
+        (x1, y1) = self.positions[-1]
+        (x2, y2) = new_position
+        return int(np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2))
+        '''
         total = [0, 0]
         z = x
         while z > 0:
@@ -59,6 +78,7 @@ class Person:
         total[1] = total[1] / x
 
         return abs(new_position[0] - total[0]) + abs(new_position[1] - total[1])
+        '''
 
 
 def get_video():
@@ -145,6 +165,7 @@ def main():
         cv2.line(img, line_point1, line_point2, (255, 0, 255), 2, 1)
 
         for (x, y, w, h) in peoples:
+
             try:
                 frameDelta = cv2.absdiff(prev_frame[x:x + w - 1, y:y + h - 1], gray[x:x + w - 1, y:y + h - 1])
                 thresh1 = np.mean(frameDelta)
@@ -153,11 +174,13 @@ def main():
             if thresh1 < 15:
                 continue
 
-            # draw detected rect
-            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 1)
-
             # calculate center point
             [cx, cy] = [x + w // 2, y + h // 2]
+
+            if cy < line_point1[1]-100:
+                continue
+            # draw detected rect
+            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 1)
             cv2.circle(img, (cx, cy), 2, (0, 0, 255), 3)
 
             lowest_closest_distance = float("inf")
@@ -165,9 +188,12 @@ def main():
             rectangle_center = (cx, cy)
 
             for i in range(0, len(people_list)):
-                if people_list[i].distance_from_last_x_positions(rectangle_center, 3) < lowest_closest_distance:
-                    lowest_closest_distance = people_list[i].distance_from_last_x_positions(rectangle_center, 3)
+                dist = people_list[i].distance_from_last_x_positions(rectangle_center, 3)
+                if lowest_closest_distance > dist:
+                    lowest_closest_distance = dist
                     closest_person_index = i
+            if lowest_closest_distance > 100:
+                closest_person_index = None
             if closest_person_index is not None:
                 if lowest_closest_distance < LOWEST_CLOSEST_DISTANCE_THRESHOLD:
                     people_list[i].update_position(rectangle_center)
@@ -175,13 +201,27 @@ def main():
                     if change == ENTERED_STRING:
                         inside_count += 1
                     elif change == LEFT_AREA_STRING:
-                        outside_count += 1
+                        # outside_count += 1
+                        pass
                 else:
                     new_person = Person(rectangle_center)
                     people_list.append(new_person)
             else:
+                if rectangle_center[1] < line_point1[1]:
+                    continue
                 new_person = Person(rectangle_center)
                 people_list.append(new_person)
+        # draw history
+        if _DEBUG_:
+            for i in range(0, len(people_list)):
+                pe = people_list[i]
+                for pos in range(0, len(pe.positions)):
+                    cv2.circle(img, pe.positions[pos], 1, (255, 255, 0), 2)
+
+        for candi in people_list:
+            if candi.isCounted:
+                # people_list.remove(candi)
+                pass
 
         if first_cap:
             first_cap = False
@@ -194,14 +234,24 @@ def main():
             out.write(img)
 
         prev_frame = gray
-        k = cv2.waitKey(33) & 0xff
-        if k == 27:
-            break
+
         if _DEBUG_:
             print("To continue, press key(c)")
-            k = cv2.waitKey(0) & 0xff
-            if k == ord('c'):
+            finish = False
+            while True:
+                k = cv2.waitKey(0) & 0xff
+                if k == ord('c'):
+                    break
+                elif k == 27:
+                    finish = True
+                    break
                 continue
+            if finish:
+                break
+        else:
+            k = cv2.waitKey(33) & 0xff
+            if k == 27:
+                break
 
     camera.release()
     if _OUTPUT_:
