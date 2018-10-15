@@ -11,7 +11,6 @@ NO_CHANGE_STRING = "STAY_IN_AREA"
 LOWEST_CLOSEST_DISTANCE_THRESHOLD = 100
 SZ_LIMIT1 = 120
 SZ_LIMIT2 = 250
-ROI_HEIGHT = 20
 line_point1 = (50, 300)
 line_point2 = (640 - 50, 300)
 top_cascade = cv2.CascadeClassifier('HAAR_3.xml')
