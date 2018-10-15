@@ -11,10 +11,10 @@ pip install imutils
 Usage:
 
 - To use local video file,
-        people_counter.py --live no --video test.avi --out result.avi
+        people_counter.py --v[video] test.avi
 
 - To use webcam,
-        people_counter.py --live yes --out result.avi
+        people_counter.py
         
         
                 %%%%%  Developed by ZaYang & Ting  %%%%%
