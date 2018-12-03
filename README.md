@@ -17,5 +17,5 @@ Usage:
         people_counter.py
         
         
-                %%%%%  Developed by ZaYang & Ting  %%%%%
+                %%%%%  Developed by Luy Sennarak  %%%%%
     
